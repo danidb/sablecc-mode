@@ -1,7 +1,8 @@
 ;; Copyright (C) 2016 by Daniel Del Balso
 ;;
-;; An emacs major mode for editing sablecc grammars.
-;; SableCC (by Etienne Gagnon : http://www.sablecc.org/)
+;; An emacs major mode for editing SableCC grammars.
+;;
+;;  (SableCC was developed by Etienne M. Gagnon : http://www.sablecc.org/)
 ;;
 ;; Thanks/Resources:
 ;;  - Xah Lee for putting so many great emacs tutorials online
@@ -12,16 +13,16 @@
 ;;
 ;; A SableCC grammar for SableCC 2 is defined (in SableCC Syntax) here:
 ;;    http://sablecc.sourceforge.net/grammars/sablecc-2x.sablecc.html
-;; and all the expression etc. below are derived from this. The contents
+;; and all the expressions etc. below are derived from this. The contents
 ;; of this mode definition may need to be modified to reflect different
 ;; versions of SableCC. Test grammars are also available in the SableCC
-;; repo https://github.com/SableCC/sablecc including one for SableCC 4
+;; repo https://github.com/SableCC/sablec
 ;;
 ;; This software should conform to the Major Mode Conventions described
 ;; in the emacs manual. Suggestions, comments, ideas, contribution
 ;; are always welcome.
 ;;
-;; The sablecc prefix is used whenever lexical scoping does not apply.
+;; The sablecc- prefix is used whenever lexical scoping does not apply.
 
 (defvar sablecc-mode-hook nil)
 
@@ -56,7 +57,7 @@
 (setq sablecc-syntax-hex "0[xX][[:xdigit:]]+")
 ;;  constructs/keywords
 ;;    sections
-(setq sablecc-syntax-keywords
+(setq sablecc-syntax-sections-keywords
       '("Package"
 	"States"
 	"Helpers"
@@ -96,27 +97,63 @@
 ;; indentation
 ;; -----------------------------------------------------------------------------
 
-;; cases
-;; Indentation case conditions are defined in separate functions to keep things
-;; as clean as possible.
+;; helpers
+;;   Move point to the last non-whitespace character
+(defun sablecc-point-to-last-non-whitespace ()
+  "Move (point) to the last non whitespace/newline character"
+  (re-search-backward "[^[:space:]\n]"))
+
+;;   The last character before (point) that is not whitespace or newline.
+(defun sablecc-prev-non-whitespace ()
+  "Return the last character before (point) that is not whitespace/newline."
+  (progn
+    (save-excursion
+      (sablecc-point-to-last-non-whitespace)
+      (string (char-after (point))))))
+
+;;  The last character that ends a line above (point) that is not whitespace or newline.
+(defun sablecc-prev-non-whitespace-line-end ()
+  "Return the last character on a prev. line before (point) that is not whitespace/newline."
+  (progn
+    (save-excursion
+      (beginning-of-line)
+      (sablecc-prev-non-whitespace))))
+
+;; indentation case tests
+;;   beginning of the buffer
 (defun sablecc-indent-case-begin ()
   "indent-case : the beginning of the buffer"
   (bobp))
 
-;(defun sablecc-indent-case-assignment ()
-;  "indent-case : if previous non :space: is ; or a section name, indent should be 1"
-;  (
-;
-;
-;
+;;   section name
+(defun sablecc-indent-case-section ()
+  "indent-case : line contains a section name"
+  (looking-at
+   (concat "^[ \t]*\\(" (concat (mapconcat 'identity sablecc-syntax-sections "\\|") "\\)"))))
+
+;;   previous line ends in a semicolon
+(defun sablecc-indent-case-prev-line-semicolon ()
+  "indent-case : does the last nonempty line end in a semicolon"
+  (string= (sablecc-prev-non-whitespace-line-end) ";"))
+
+;;   previous nonempty line is a section name
+(defun sablecc-indent-case-prev-line-section ()
+  "indent-case : previous non-empty line is a section name"
+  (progn
+    (save-excursion
+      (beginning-of-line)
+      (sablecc-point-to-last-non-whitespace)
+      (sablecc-indent-case-section))))
+
+
+
 ;(defun salbecc-indent-line ()
 ;  "Indent the current line of a SableCC specification."
 ;  (interactive)
 ;  (beginning-of-line)
-;  (if (sablecc-indent-case-begin) (indent-line-to 0)
-;    (if (sablecc-indent-case-enter-section) (indent-line-to 1)
-;      (if
-;
+;  (if (sablecc-indent-case-begin)
+;      (indent-line-to 0)
+
 
 
 
@@ -145,7 +182,7 @@
   (setq major-mode 'sablecc-mode)
   (setq mode-name "SableCC")
   (run-hooks 'sablecc-mode-hook))
-
-;; autoload
+;; autoload for .sablecc or .sableccN where N is some digit
+;; (at least it will load for whatever version the user is using)
 (add-to-list 'auto-mode-alist '("\\.sablecc[[:digit:]]*\\'" . sablecc-mode))
 (provide 'sablecc-mode)
