@@ -54,90 +54,105 @@
 
 ;; keywords/syntax definitions
 ;;   literals
-(setq sablecc-syntax-hex "0[xX][[:xdigit:]]+")
+(defvar sablecc--syntax-hex "0[xX][[:xdigit:]]+")
 ;;  constructs/keywords
 ;;    sections
-(setq sablecc-syntax-sections-keywords
+(defvar sablecc--syntax-sections-keywords
       '("Package"
 	"States"
 	"Helpers"
 	"Tokens"
 	"Ignored Tokens"
 	"Productions"))
-(setq sablecc-syntax-sections (regexp-opt sablecc-syntax-keywords 'words))
+(defvar sablecc--syntax-sections (regexp-opt sablecc--syntax-sections-keywords 'words))
 ;;  specifiers (T. and P.)
-(setq sablecc-syntax-specifiers "\\(T\\.\\)\\|\\(P\\.\\)")
+(defvar sablecc--syntax-specifiers "\\(T\\.\\)\\|\\(P\\.\\)")
 ;;  identifiers, names
-(setq sablecc-syntax-id "\\([a-z]+[a-z0-9_]*[a-z0-9]\\)")
-(setq sablecc-syntax-name
+(defvar sablecc--syntax-id "\\([a-z]+[a-z0-9_]*[a-z0-9]\\)")
+(defvar sablecc--syntax-name
       (concat "{[[:space:]]*"
-	      (concat sablecc-syntax-id
+	      (concat sablecc--syntax-id
 		      (concat "\\([,\\(->\\)][[:space:]]*"
-			      (concat sablecc-syntax-id "\\)*}")))))
-(setq sablecc-syntax-idfirstuse
-      (concat "[[:space:]]*" (concat sablecc-syntax-id "[[:space:]]*=")))
-;;  package ids (split to make it a bit more readable, mimic sablecc rule)
-(setq sablecc-syntax-packageid "[[:alpha:]][[:alnum:]]+")
-(setq sablecc-syntax-package
+			      (concat sablecc--syntax-id "\\)*}")))))
+(defvar sablecc--syntax-idfirstuse
+      (concat "[[:space:]]*" (concat sablecc--syntax-id "[[:space:]]*=")))
+;;  package ids (split to make it a bit more readable, mimic sablecc- rule)
+(defvar sablecc--syntax-packageid "[[:alpha:]][[:alnum:]]+")
+(defvar sablecc--syntax-package
       (concat "Package[[:space:]]+\\("
-	      (concat sablecc-syntax-packageid
+	      (concat sablecc--syntax-packageid
 		      (concat "\\(\\."
-			      (concat sablecc-syntax-packageid "\\)*\\)")))))
+			      (concat sablecc--syntax-packageid "\\)*\\)")))))
 ;; define font-lock
-(defvar sablecc-font-lock
-  `(( ,sablecc-syntax-package 1 font-lock-builtin-face)
-    ( ,sablecc-syntax-idfirstuse 1 font-lock-variable-name-face)
-    ( ,sablecc-syntax-name . font-lock-type-face)
-    ( ,sablecc-syntax-specifiers . font-lock-function-name-face)
-    ( ,sablecc-syntax-sections . font-lock-builtin-face)
-    ( ,sablecc-syntax-hex . font-lock-constant-face)))
+(defvar sablecc--font-lock
+  `(( ,sablecc--syntax-package 1 font-lock-builtin-face)
+    ( ,sablecc--syntax-idfirstuse 1 font-lock-variable-name-face)
+    ( ,sablecc--syntax-name . font-lock-type-face)
+    ( ,sablecc--syntax-specifiers . font-lock-function-name-face)
+    ( ,sablecc--syntax-sections . font-lock-builtin-face)
+    ( ,sablecc--syntax-hex . font-lock-constant-face)))
 
 
 
 ;; indentation
 ;; -----------------------------------------------------------------------------
 
+
 ;; helpers
-;;   Move point to the last non-whitespace character
-(defun sablecc-point-to-last-non-whitespace ()
-  "Move (point) to the last non whitespace/newline character"
+;;   current line is a comment ?
+(defun sablecc--line-is-comment ()
+  "Check if a line is inside a comment (single line or block)."
+  (nth 4 (syntax-ppss)))
+
+;;   move point to the last non-whitespace character,
+(defun sablecc--point-to-last-non-whitespace ()
+  "Move (point) to last non whitespace/newline character"
   (re-search-backward "[^[:space:]\n]"))
 
-;;   The last character before (point) that is not whitespace or newline.
-(defun sablecc-prev-non-whitespace ()
+;;   the last character before (point) that is not whitespace or newline.
+(defun sablecc--prev-non-whitespace ()
   "Return the last character before (point) that is not whitespace/newline."
   (progn
     (save-excursion
-      (sablecc-point-to-last-non-whitespace)
+      (sablecc--point-to-last-non-whitespace)
       (string (char-after (point))))))
 
-;;  The last character that ends a line above (point) that is not whitespace or newline.
-(defun sablecc-prev-non-whitespace-line-end ()
+;;   count unmatched brackets/parens/braces before (point) up to a ;
+;(defun sablecc--prev-unmatched-paren ()
+;  "Count previous open parens."
+;  (progn
+;    (save-excursion
+;      (
+
+;;   last character that ends a line above (point): not whitespace, newline, or in comment.
+(defun sablecc--prev-non-whitespace-line-end ()
   "Return the last character on a prev. line before (point) that is not whitespace/newline."
   (progn
     (save-excursion
       (beginning-of-line)
-      (sablecc-prev-non-whitespace))))
+      (previous-line)
+      (while (sablecc--line-is-comment) (previous-line))
+      (sablecc--prev-non-whitespace))))
 
 ;; indentation case tests
 ;;   beginning of the buffer
-(defun sablecc-indent-case-begin ()
+(defun sablecc--indent-case-begin ()
   "indent-case : the beginning of the buffer"
   (bobp))
 
 ;;   section name
-(defun sablecc-indent-case-section ()
+(defun sablecc--indent-case-section ()
   "indent-case : line contains a section name"
   (looking-at
-   (concat "^[ \t]*\\(" (concat (mapconcat 'identity sablecc-syntax-sections "\\|") "\\)"))))
+   (concat "^[ \t]*\\(" (concat (mapconcat 'identity sablecc--syntax-sections "\\|") "\\)"))))
 
 ;;   previous line ends in a semicolon
-(defun sablecc-indent-case-prev-line-semicolon ()
+(defun sablecc--indent-case-prev-line-semicolon ()
   "indent-case : does the last nonempty line end in a semicolon"
-  (string= (sablecc-prev-non-whitespace-line-end) ";"))
+  (string= (sablecc--prev-non-whitespace-line-end) ";"))
 
 ;;   previous nonempty line is a section name
-(defun sablecc-indent-case-prev-line-section ()
+(defun sablecc--indent-case-prev-line-section ()
   "indent-case : previous non-empty line is a section name"
   (progn
     (save-excursion
@@ -147,12 +162,21 @@
 
 
 
+;;   indent-line function
 ;(defun salbecc-indent-line ()
 ;  "Indent the current line of a SableCC specification."
 ;  (interactive)
 ;  (beginning-of-line)
-;  (if (sablecc-indent-case-begin)
+;  (let (
+;  (if (or (sablecc-indent-case-begin) (sablecc-indent-case-section))
 ;      (indent-line-to 0)
+;    (if (or (sablecc-prev-line-semicolon) (sablecc-prev-line-section))
+;	(indent-line-to 2)
+;      ((let
+;
+
+
+
 
 
 
