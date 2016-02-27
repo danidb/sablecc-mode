@@ -79,17 +79,17 @@
 (defvar sablecc--syntax-name "{[^{}]*}")
 (defvar sablecc--syntax-idfirstuse
   (concat "[[:space:]\n]*"
-	  (concat sablecc--syntax-id
-		  (concat "[[:space:]\n]*\\("
-			  (concat sablecc--syntax-name
-				  (concat "\\)?[[:space:]\n]*="))))))
+	   sablecc--syntax-id
+	   "[[:space:]\n]*\\("
+	   sablecc--syntax-name
+	   "\\)?[[:space:]\n]*="))
 ;;  package ids (split to make it a bit more readable, mimic sablecc- rule)
 (defvar sablecc--syntax-packageid "[[:alpha:]][[:alnum:]]+")
 (defvar sablecc--syntax-package
-      (concat "Package[[:space:]]+\\("
-	      (concat sablecc--syntax-packageid
-		      (concat "\\(\\."
-			      (concat sablecc--syntax-packageid "\\)*\\)")))))
+  (conccat "Package[[:space:]]+\\("
+	   sablecc--syntax-packageid
+	   "\\(\\."
+	   sablecc--syntax-packageid "\\)*\\)"))
 ;; define font-lock
 (defvar sablecc--font-lock
   `(( ,sablecc--syntax-package 1 font-lock-builtin-face)
@@ -105,9 +105,9 @@
 
 ;; constants
 ;;   paren indent
-(defconst sablecc--paren-indent-amount 1)
+(defcustom sablecc-paren-indent-amount 1 "Amount by which to within parens")
 ;;   other indentation
-(defconst sablecc--indent-amount 2)
+(defcustom sablecc-indent-amount 2 "General indentation amount")
 
 ;; helpers/specific case tests
 ;;   current line is a comment ?
@@ -160,7 +160,7 @@
 	(if parser-state
 	    (progn
 	      (goto-char parser-state)
-	      (+ (current-column) sablecc--paren-indent-amount))
+	      (+ (current-column) sablecc-paren-indent-amount))
 	  nil)))))
 
 ;;  compute indentation when we're dealing with lists
@@ -243,20 +243,35 @@
 	      (let ((name-column (sablecc--prev-line-name-column)))
 		(if name-column
 		    (indent-line-to name-column)
-		  ;; for any other case, indent line to column (+ 2 sablecc--indent-amount)
-		  (indent-line-to (+ 2 sablecc--indent-amount)))))))))))
+		  ;; for any other case, indent line to column (+ 2 sablecc-indent-amount)
+		  (indent-line-to (+ 2 sablecc-indent-amount)))))))))))
 
 ;; keybindings
 (defvar sablecc-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map "\C-c \C-c" 'sablecc-compile)
+    (define-key map "\C-c \C-c" 'sablecc-compile-buffer)
     map)
   "Keymap for SableCC major mode")
 
 ;; sablecc-mode commands
 ;; -----------------------------------------------------------------------------
 
+;; constants - can be set by user
+(defcustom sablecc-compile-commmand-prefix
+  "The command prefix to use when running sablecc. If you want the jar, java -jar /path/to/sablecc.jar"
+  "sablecc")
 
+;; compilation
+;(defun sablecc-compile-buffer ()
+;  "Compile the current buffer with sablecc - error messages etc. are displayed in a temporary buffer."
+;  (interactive)
+;  (let ((current-file (buffer-file-name)))
+;    (if (buffer-modified)
+;	(if ((y-or-n-p (format "Save file %s?" current-file)))
+;	    (save-buffer))
+;      (with-output-to-temp-buffer "*sablecc-response*"
+;	(shell-command (concat sablecc-compile-commnand-prefix
+;			       " "
 
 ;; sablecc-mode final definition
 ;; -----------------------------------------------------------------------------
