@@ -82,13 +82,14 @@
 (defvar sablecc--syntax-specifiers "\\(T\\.\\)\\|\\(P\\.\\)")
 ;;  identifiers, names
 (defvar sablecc--syntax-id "\\([a-z]+[a-z0-9_]*[a-z0-9]\\)")
-(defvar sablecc--syntax-name
-      (concat "{[[:space:]]*"
-	      (concat sablecc--syntax-id
-		      (concat "\\([,\\(->\\)][[:space:]]*"
-			      (concat sablecc--syntax-id "\\)*}")))))
+;; todo make sablecc--syntax-name more specific so only valid names are highlighted
+(defvar sablecc--syntax-name "{[^{}]*}")
 (defvar sablecc--syntax-idfirstuse
-      (concat "^[[:space:]]*" (concat sablecc--syntax-id "[[:space:]]*=")))
+  (concat "[[:space:]\n]*"
+	  (concat sablecc--syntax-id
+		  (concat "[[:space:]\n]*\\("
+			  (concat sablecc--syntax-name
+				  (concat "\\)?[[:space:]\n]*="))))))
 ;;  package ids (split to make it a bit more readable, mimic sablecc- rule)
 (defvar sablecc--syntax-packageid "[[:alpha:]][[:alnum:]]+")
 (defvar sablecc--syntax-package
@@ -133,8 +134,6 @@
     (save-excursion
       (sablecc--point-to-last-non-whitespace)
       (string (char-after (point))))))
-
-;; fail
 
 ;;   point to the end of the line above (point) that is not whitespace, newline, or in a commnet
 (defun sablecc--point-to-prev-non-whitespace-line-end ()
@@ -220,10 +219,8 @@
 
 
 ;;   indent-line function
-(defun salbecc-indent-line ()
+(defun salbecc--indent-line ()
   "Indent the current line of a SableCC specification."
-  (interactive)
-  (beginning-of-line)
   ;; section names and the beginning of the buffer are always in column 0
   (if (or (sablecc--indent-case-begin) (sablecc--indent-case-section))
       (indent-line-to 0)
@@ -270,6 +267,7 @@
   (set-syntax-table sablecc-syntax-table)
   (use-local-map sablecc-mode-map)
   (set (make-local-variable 'font-lock-defaults) '(sablecc--font-lock))
+  (set (make-local-variable 'indent-line-function) 'sablecc--indent-line)
   (setq major-mode 'sablecc-mode)
   (setq mode-name "SableCC")
   (run-hooks 'sablecc-mode-hook))
