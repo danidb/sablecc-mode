@@ -55,13 +55,6 @@
 	(modify-syntax-entry ?\" "w" syntax-table-sub)
 	;; there is no magic escape character
 	(modify-syntax-entry ?\\ "w" syntax-table-sub)
-	;; make sure all []{}() are parens
-	(modify-syntax-entry ?\( "($)" syntax-table-sub)
-	(modify-syntax-entry ?\) ")$(" syntax-table-sub)
-	(modify-syntax-entry ?[ "($]" syntax-table-sub)
-	(modify-syntax-entry ?] ")$[" syntax-table-sub)
-	(modify-syntax-entry ?{ "($}" syntax-table-sub)
-	(modify-syntax-entry ?} ")${" syntax-table-sub)
         syntax-table-sub)
       "SableCC syntax table")
 
@@ -125,6 +118,7 @@
 ;;   move point to the last non-whitespace character,
 (defun sablecc--point-to-last-non-whitespace ()
   "Move (point) to last non whitespace/newline character"
+  (forward-char)
   (re-search-backward "[^[:space:]\n]"))
 
 ;;   the last character before (point) that is not whitespace or newline.
@@ -141,11 +135,11 @@
   (progn
     (previous-line)
     (end-of-line)
+    (sablecc--point-to-last-non-whitespace)
     (while (sablecc--line-is-comment)
       (previous-line)
       (end-of-line)
-      (sablecc--point-to-last-non-whitespace)
-      (forward-char))))
+      (sablecc--point-to-last-non-whitespace))))
 
 ;;   last character that ends a line above (point): not whitespace, newline, or in comment.
 (defun sablecc--prev-non-whitespace-line-end ()
@@ -162,9 +156,12 @@
     (save-excursion
       (previous-line)
       (end-of-line)
-      (let ((parser-state (parse-partial-sexp (point) 1)))
-	(goto-char (nth 2 parser-state))
-	(+ (current-column) sablecc--paren-indent-amount)))))
+      (let ((parser-state (nth 1 (parse-partial-sexp (+ (point) 1) 1))))
+	(if parser-state
+	    (progn
+	      (goto-char parser-state)
+	      (+ (current-column) sablecc--paren-indent-amount))
+	  nil)))))
 
 ;;  compute indentation when we're dealing with lists
 (defun sablecc--prev-line-comma-column ()
@@ -172,23 +169,27 @@
   (progn
     (save-excursion
       (sablecc--point-to-prev-non-whitespace-line-end)
-      (if (string= (char-before) ",")
+      (forward-char)
+      (if (string= (string (char-before)) ",")
 	  (progn
 	    (back-to-indentation)
-	    (currrent-column))
+	    (current-column))
 	nil))))
 
-;;   compute indentation when dealing with assignments and no mismatched parens etc
-(defun sablecc--prev-line-equals-column ()
-  "Get the column of the last = on a previous line, not in a string, comment etc."
+;;   last nonempty/noncomment line contains only a name
+(defun sablecc--prev-line-name-column ()
+  "If the last nonempty/noncomment line has a name, indent to its level."
   (progn
     (save-excursion
-      (re-search-backward sablecc--syntax-idfirstuse)
-      (re-search-forward "=")
-      ;; move to next non-space
-      (forward-char)
-      (re-search-forward "[^[:space:]\n]")
-      (current-column))))
+      (previous-line)
+      (while (sablecc--line-is-comment)
+	(previous-line))
+      (back-to-indentation)
+      (if (looking-at sablecc--syntax-name)
+	  (current-column)
+	nil))))
+
+
 
 ;; simple cases
 ;;   beginning of the buffer
@@ -199,8 +200,11 @@
 ;;   section name
 (defun sablecc--indent-case-section ()
   "indent-case : line contains a section name"
-  (looking-at
-   (concat "^[ \t]*\\(" (concat (mapconcat 'identity sablecc--syntax-sections "\\|") "\\)"))))
+  (progn
+    (save-excursion
+      (beginning-of-line)
+      (looking-at
+       (concat sablecc--syntax-sections)))))
 
 ;;   previous line ends in a semicolon
 (defun sablecc--indent-case-prev-line-semicolon ()
@@ -212,21 +216,19 @@
   "indent-case : previous non-empty line is a section name"
   (progn
     (save-excursion
-      (beginning-of-line)
-      (sablecc-point-to-last-non-whitespace)
-      (sablecc-indent-case-section))))
-
+      (sablecc--point-to-prev-non-whitespace-line-end)
+      (sablecc--indent-case-section))))
 
 
 ;;   indent-line function
-(defun salbecc--indent-line ()
+(defun sablecc--indent-line ()
   "Indent the current line of a SableCC specification."
   ;; section names and the beginning of the buffer are always in column 0
   (if (or (sablecc--indent-case-begin) (sablecc--indent-case-section))
       (indent-line-to 0)
     ;; if the last line of code(!) ended in a semicolon or was a section
     ;; name, current line goes to column 2.
-    (if (or (sablecc--prev-line-semicolon) (sablecc--prev-line-section))
+    (if (or (sablecc--indent-case-prev-line-semicolon) (sablecc--indent-case-prev-line-section))
 	(indent-line-to 2)
       ;; if we have an unbalanced paren above this line, we indent to its level + 1
       (let ((paren-indent (sablecc--prev-line-unmatched-paren-column)))
@@ -237,13 +239,12 @@
 	  (let ((comma-column (sablecc--prev-line-comma-column)))
 	    (if comma-column
 		(indent-line-to comma-column)
-	      ;; if we linebreak for any other reason, indent to the level of the
-	      ;; last =, if possible
-	      (let ((assignment-column (sablecc--prev-line-equals-column)))
-		(if in-assignment
-		    (indent-line-to assignment-column)
+	      ;; if previous line ia a name, indent to same level
+	      (let ((name-column (sablecc--prev-line-name-column)))
+		(if name-column
+		    (indent-line-to name-column)
 		  ;; for any other case, indent line to column (+ 2 sablecc--indent-amount)
-		  (indent-line-to (+ 2 sablecc--idnent-amount)))))))))))
+		  (indent-line-to (+ 2 sablecc--indent-amount)))))))))))
 
 ;; keybindings
 (defvar sablecc-mode-map
