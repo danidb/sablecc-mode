@@ -242,13 +242,6 @@
 		  ;; for any other case, indent line to column (+ 2 sablecc-indent-amount)
 		  (indent-line-to (+ 2 sablecc-indent-amount)))))))))))
 
-;; keybindings
-(defvar sablecc-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map "\C-c \C-c" 'sablecc-compile-buffer)
-    map)
-  "Keymap for SableCC major mode")
-
 ;; sablecc-mode commands
 ;; -----------------------------------------------------------------------------
 
@@ -322,6 +315,17 @@
 	(if ((y-or-n-p (format "Save file %s?" file-path)))
 	    (save-buffer)))
     (sablecc--compile file-path (sablecc--get-command-line-args))))
+
+
+
+;; keybindings
+(defvar sablecc-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "\C-c \C-c" 'sablecc-compile-buffer)
+    (define-key-map "\C-c \C-f" 'sablecc-compile-file)
+    map)
+  "Keymap for SableCC major mode")
+
 
 ;; sablecc-mode final definition
 ;; -----------------------------------------------------------------------------
