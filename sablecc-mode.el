@@ -272,7 +272,7 @@
 
 ;; functions
 ;;   (internal) compile a file with sablecc
-(defun sablecc--compile (file-path, arg-string)
+(defun sablecc--compile (file-path args-string)
   "Compile  file with sablecc. Not interactive."
   (with-output-to-temp-buffer "*sablecc-output*"
     (shell-command (concat sablecc-compile-commmand-prefix
@@ -280,8 +280,8 @@
 			   args-string
 			   " "
 			   file-path)
-		   "*Messages*"
-		   "*sablecc-output*")
+		   "*sablecc-output*"
+		   "*sablecc-alt-output*")
     (pop-to-buffer "*sablecc-output*")))
 
 ;;   get command line arguments from the user
@@ -295,17 +295,17 @@
   (interactive)
   (let ((file-path (expand-file-name
 		    (read-file-name "SableCC file: "))))
-    (sablecc--compile file-path sablecc--get-command-line-args)))
+    (sablecc--compile file-path (sablecc--get-command-line-args))))
 
 ;; compile current buffer
 (defun sablecc-compile-buffer ()
   "Compile the current buffer with sablecc."
   (interactive)
   (let ((file-path (expand-file-name (buffer-file-name))))
-    (if (buffer-modified)
+    (if (buffer-modified-p)
 	(if ((y-or-n-p (format "Save file %s?" file-path)))
 	    (save-buffer)))
-    (sablecc--compile file-path sablecc--get-command-line-args)))
+    (sablecc--compile file-path (sablecc--get-command-line-args))))
 
 ;; sablecc-mode final definition
 ;; -----------------------------------------------------------------------------
