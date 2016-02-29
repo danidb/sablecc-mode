@@ -86,10 +86,10 @@
 ;;  package ids (split to make it a bit more readable, mimic sablecc- rule)
 (defvar sablecc--syntax-packageid "[[:alpha:]][[:alnum:]]+")
 (defvar sablecc--syntax-package
-  (conccat "Package[[:space:]]+\\("
-	   sablecc--syntax-packageid
-	   "\\(\\."
-	   sablecc--syntax-packageid "\\)*\\)"))
+  (concat "Package[[:space:]]+\\("
+	  sablecc--syntax-packageid
+	  "\\(\\."
+	  sablecc--syntax-packageid "\\)*\\)"))
 ;; define font-lock
 (defvar sablecc--font-lock
   `(( ,sablecc--syntax-package 1 font-lock-builtin-face)
@@ -256,22 +256,56 @@
 ;; sablecc-mode commands
 ;; -----------------------------------------------------------------------------
 
-;; constants - can be set by user
+;; vars
+;;   command prefix - user settable
 (defcustom sablecc-compile-commmand-prefix
-  "The command prefix to use when running sablecc. If you want the jar, java -jar /path/to/sablecc.jar"
-  "sablecc")
+  "sablecc"
+  "The command prefix to use when running sablecc. If you want the jar, java -jar /path/to/sablecc.jar")
+;;   default args - user settable
+(defcustom sablecc-command-line-args-default
+  " "
+  "Default command line arguments to sablecc.")
 
-;; compilation
-;(defun sablecc-compile-buffer ()
-;  "Compile the current buffer with sablecc - error messages etc. are displayed in a temporary buffer."
-;  (interactive)
-;  (let ((current-file (buffer-file-name)))
-;    (if (buffer-modified)
-;	(if ((y-or-n-p (format "Save file %s?" current-file)))
-;	    (save-buffer))
-;      (with-output-to-temp-buffer "*sablecc-response*"
-;	(shell-command (concat sablecc-compile-commnand-prefix
-;			       " "
+;;   previous args
+(defvar sablecc--previous-args " ")
+
+
+;; functions
+;;   (internal) compile a file with sablecc
+(defun sablecc--compile (file-path, arg-string)
+  "Compile  file with sablecc. Not interactive."
+  (with-output-to-temp-buffer "*sablecc-output*"
+    (shell-command (concat sablecc-compile-commmand-prefix
+			   " "
+			   args-string
+			   " "
+			   file-path)
+		   "*Messages*"
+		   "*sablecc-output*")
+    (pop-to-buffer "*sablecc-output*")))
+
+;;   get command line arguments from the user
+(defun sablecc--get-command-line-args ()
+  "Get command line arguments from the user when sablecc is run. Remember them for the next run."
+  (read-string "SableCC arguments : "))
+
+;;   compile a user-specified file
+(defun sablecc-compile-file ()
+  "Compile a file with sablecc."
+  (interactive)
+  (let ((file-path (expand-file-name
+		    (read-file-name "SableCC file: "))))
+    (sablecc--compile file-path sablecc--get-command-line-args)))
+
+;; compile current buffer
+(defun sablecc-compile-buffer ()
+  "Compile the current buffer with sablecc."
+  (interactive)
+  (let ((file-path (expand-file-name (buffer-file-name))))
+    (if (buffer-modified)
+	(if ((y-or-n-p (format "Save file %s?" file-path)))
+	    (save-buffer)))
+    (sablecc--compile file-path sablecc--get-command-line-args)))
 
 ;; sablecc-mode final definition
 ;; -----------------------------------------------------------------------------
