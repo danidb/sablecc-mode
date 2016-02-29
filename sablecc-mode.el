@@ -27,10 +27,6 @@
 
 (defvar sablecc-mode-hook nil)
 
-;; definitions/settings
-;; ----------------------------------------------------------------------------
-
-
 ;; syntax (highlighting/font-lock, keyword definitions etc.)
 ;; -----------------------------------------------------------------------------
 
