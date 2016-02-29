@@ -274,15 +274,35 @@
 ;;   (internal) compile a file with sablecc
 (defun sablecc--compile (file-path args-string)
   "Compile  file with sablecc. Not interactive."
-  (with-output-to-temp-buffer "*sablecc-output*"
-    (shell-command (concat sablecc-compile-commmand-prefix
-			   " "
-			   args-string
-			   " "
-			   file-path)
-		   "*sablecc-output*"
-		   "*sablecc-alt-output*")
-    (pop-to-buffer "*sablecc-output*")))
+  ;; check if --pretty-print is in args-string, if yes provide appropriate buffer
+  (let ((pretty-printing (string-match "^.*--pretty-print.*$" args-string)))
+    (if pretty-printing
+	(let ((pretty-buffer-name-pref (concat (file-name-sans-extension (buffer-name))
+					       "_pretty."
+					       (file-name-extension (buffer-name)))))
+	  ;; We need to catch the output here, to enable creation of enumerated
+	  ;; buffers with the same name.
+	  (let ((pretty-buffer-name (buffer-name (generate-new-buffer pretty-buffer-name-pref))))
+	    (with-output-to-temp-buffer "*sablecc-info*"
+	      (shell-command (concat sablecc-compile-commmand-prefix
+				     " "
+				     args-string
+				     " "
+				     file-path)
+			     "*sablecc-info*"
+			     pretty-buffer-name))
+	    (pop-to-buffer pretty-buffer-name)
+	    (beginning-of-buffer)
+	    (sablecc-mode)))
+      (with-output-to-temp-buffer "*sablecc-info*"
+	(shell-command (concat sablecc-compile-commmand-prefix
+			       " "
+			       args-string
+			       " "
+			       file-path)
+		       "*sablecc-info*"
+		       "*Messages*")
+	(pop-to-buffer "*sablecc-info*")))))
 
 ;;   get command line arguments from the user
 (defun sablecc--get-command-line-args ()
