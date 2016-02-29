@@ -12,7 +12,7 @@ Ideally, at some point, this will be submitted to MELPA as a package. Until then
 ## Functions
 
 ### `sablecc-compile-buffer`
-Compiles the current buffer with sablecc. Prompts for arguments to SableCC. Can be run with `C-c C-c`.
+Compiles the current buffer with SableCC. Prompts for arguments to SableCC. Can be run with `C-c C-c`.
 
 ### `sablecc-compile-file`
 Prompts for a file path and runs SableCC. Prompts for arguments to SableCC. Can be run with `C-c C-f`
