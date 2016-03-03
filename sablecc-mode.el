@@ -322,7 +322,7 @@
 (defvar sablecc-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map "\C-c \C-c" 'sablecc-compile-buffer)
-    (define-key-map "\C-c \C-f" 'sablecc-compile-file)
+    (define-key map "\C-c \C-f" 'sablecc-compile-file)
     map)
   "Keymap for SableCC major mode")
 
