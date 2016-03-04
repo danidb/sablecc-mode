@@ -73,6 +73,9 @@
 (defvar sablecc--syntax-id "\\([a-z]+[a-z0-9_]*[a-z0-9]\\)")
 ;; todo make sablecc--syntax-name more specific so only valid names are highlighted
 (defvar sablecc--syntax-name "{[^{}]*}")
+(defvar sablecc--syntax-name-same-element (concat"\\(\\["
+						 sablecc--syntax-id
+						 "\\]\\):"))
 (defvar sablecc--syntax-idfirstuse
   (concat "[[:space:]\n]*"
 	   sablecc--syntax-id
@@ -91,6 +94,7 @@
   `(( ,sablecc--syntax-package 1 font-lock-builtin-face)
     ( ,sablecc--syntax-idfirstuse 1 font-lock-variable-name-face)
     ( ,sablecc--syntax-name . font-lock-type-face)
+    ( ,sablecc--syntax-name-same-element 1 font-lock-type-face)
     ( ,sablecc--syntax-specifiers . font-lock-function-name-face)
     ( ,sablecc--syntax-sections . font-lock-builtin-face)
     ( ,sablecc--syntax-hex . font-lock-constant-face)))
