@@ -288,15 +288,17 @@
 	    (pop-to-buffer pretty-buffer-name)
 	    (beginning-of-buffer)
 	    (sablecc-mode)))
-      (with-output-to-temp-buffer "*sablecc-info*"
-	(shell-command (concat sablecc-compile-commmand-prefix
-			       " "
-			       args-string
-			       " "
-			       file-path)
-		       "*sablecc-info*"
-		       "*Messages*")
-	(pop-to-buffer "*sablecc-info*")))))
+      (let ((error-buffer-name (buffer-name (generate-new-buffer "*sablecc-stderr*"))))
+
+	(with-output-to-temp-buffer "*sablecc-info*"
+	  (shell-command (concat sablecc-compile-commmand-prefix
+				 " "
+				 args-string
+				 " "
+				 file-path)
+			 "*sablecc-info*"
+			 "*sablecc-stderr*")
+	  (pop-to-buffer "*sablecc-stderr*"))))))
 
 ;;   get command line arguments from the user
 (defun sablecc--get-command-line-args ()

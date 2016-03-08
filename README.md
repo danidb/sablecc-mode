@@ -1,6 +1,9 @@
 # sablecc-mode
 An Emacs major mode for editing SableCC grammar specifications.
 
+## Version: 1e-10 (i.e. very much 'pre-alpha')
+But it works for the most part.
+
 ## Installation
 
 Ideally, at some point, this will be submitted to MELPA as a package. Until then...
@@ -18,3 +21,9 @@ Compiles the current buffer with SableCC. Prompts for arguments to SableCC. Can 
 Prompts for a file path and runs SableCC. Prompts for arguments to SableCC. Can be run with `C-c C-f`
 
 Note that if `--pretty-print` is provided as an argument, a new `sablecc-mode` buffer is created with the output. For all runs, a temporary buffer with the output of SableCC (to `stdout`), called `*sablecc-info*`, is opened.
+
+## Issues
+	- M-j doesn't work correctly in comments
+	- Multiline comment indentation doesn't seem to get it right all the time.
+	- Error messages from java may not work correctly.
+	- Could use some nicer highlighting for AST names etc.
