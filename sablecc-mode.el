@@ -65,7 +65,8 @@
 	"Helpers"
 	"Tokens"
 	"Ignored Tokens"
-	"Productions"))
+	"Productions"
+	"Abstract Syntax Tree"))
 (defvar sablecc--syntax-sections (regexp-opt sablecc--syntax-sections-keywords 'words))
 ;;  specifiers (T. and P.)
 (defvar sablecc--syntax-specifiers "\\(T\\.\\)\\|\\(P\\.\\)")
