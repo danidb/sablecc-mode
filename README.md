@@ -1,10 +1,7 @@
 # sablecc-mode
 An Emacs major mode for editing SableCC grammar specifications.
 
-## Version: 1e-10 (i.e. very much 'pre-alpha')
-But it works for the most part.
-
-## Installation
+## Instal
 
 Ideally, at some point, this will be submitted to MELPA as a package. Until then...
 
