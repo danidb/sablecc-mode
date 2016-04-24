@@ -1,30 +1,27 @@
-;; Copyright (C) 2016 by Daniel Del Balso
-;;
-;; An emacs major mode for editing SableCC grammars.
-;;
-;;  (SableCC was developed by Etienne M. Gagnon : http://www.sablecc.org/)
+;;; sablecc-mode.el --- Major mode for editing SableCC grammars.
+;;;
+;;; Copyright (C) 2016 by Daniel Del Balso
+
+;;; Author: Daniel Del Balso <daniel.delbalso@gmail.com>
+
+;;; Commentary:
+;; SableCC was developed by Etienne M. Gagnon : http://www.sablecc.org/.
 ;;
 ;; Thanks/Resources:
-;;  - Xah Lee for putting so many great emacs tutorials online
+;;  - Xah Lee for putting so many great Emacs tutorials online
 ;;  - The author(s) of https://www.emacswiki.org/emacs/ModeTutorial
 ;;    and the article it was derived from
 ;;  - http://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Flags.html
 ;;  - https://www.emacswiki.org/emacs-test/SampleMode
 ;;  - c-mode.el : a lot of hints http://opensource.apple.com/source/emacs/emacs-56/emacs/lisp/obsolete/c-mode.el
 ;;
-;; A SableCC grammar for SableCC 2 is defined (in SableCC Syntax) here:
-;;    http://sablecc.sourceforge.net/grammars/sablecc-2x.sablecc.html
-;; and all the expressions etc. below are derived from this. The contents
-;; of this mode definition may need to be modified to reflect different
-;; versions of SableCC. Test grammars are also available in the SableCC
-;; repo https://github.com/SableCC/sablec
-;;
 ;; This software should conform to the Major Mode Conventions described
-;; in the emacs manual. Suggestions, comments, ideas, contribution
+;; in the Emacs manual.  Suggestions, comments, ideas, contribution
 ;; are always welcome.
 ;;
 ;; The sablecc- prefix is used whenever lexical scoping does not apply.
 
+;;; Code:
 (defvar sablecc-mode-hook nil)
 
 ;; syntax (highlighting/font-lock, keyword definitions etc.)
@@ -52,7 +49,7 @@
 	;; there is no magic escape character
 	(modify-syntax-entry ?\\ "w" syntax-table-sub)
         syntax-table-sub)
-      "SableCC syntax table")
+      "SableCC syntax table.")
 
 ;; keywords/syntax definitions
 ;;   literals
@@ -106,9 +103,9 @@
 
 ;; constants
 ;;   paren indent
-(defcustom sablecc-paren-indent-amount 1 "Amount by which to within parens")
+(defcustom sablecc-paren-indent-amount 1 "Amount by which to within parens.")
 ;;   other indentation
-(defcustom sablecc-indent-amount 2 "General indentation amount")
+(defcustom sablecc-indent-amount 2 "General indentation amount.")
 
 ;; helpers/specific case tests
 ;;   current line is a comment ?
@@ -118,7 +115,7 @@
 
 ;;   move point to the last non-whitespace character,
 (defun sablecc--point-to-last-non-whitespace ()
-  "Move (point) to last non whitespace/newline character"
+  "Move (point) to last non whitespace/newline character."
   (forward-char)
   (re-search-backward "[^[:space:]\n]"))
 
@@ -144,7 +141,7 @@
 
 ;;   last character that ends a line above (point): not whitespace, newline, or in comment.
 (defun sablecc--prev-non-whitespace-line-end ()
-  "Return the last character on a prev. line before (point) that is not whitespace/newline or a comment."
+  "Return the last character on a previous line before (point) that is not whitespace/newline or a comment."
   (progn
     (save-excursion
       (sablecc--point-to-prev-non-whitespace-line-end)
@@ -195,12 +192,12 @@
 ;; simple cases
 ;;   beginning of the buffer
 (defun sablecc--indent-case-begin ()
-  "indent-case : the beginning of the buffer"
+  "Indent-case : the beginning of the buffer?"
   (bobp))
 
 ;;   section name
 (defun sablecc--indent-case-section ()
-  "indent-case : line contains a section name"
+  "Indent-case : does line contain a section name?"
   (progn
     (save-excursion
       (beginning-of-line)
@@ -209,12 +206,12 @@
 
 ;;   previous line ends in a semicolon
 (defun sablecc--indent-case-prev-line-semicolon ()
-  "indent-case : does the last nonempty line end in a semicolon"
+  "Indent-case : does the last nonempty line end in a semicolon?"
   (string= (sablecc--prev-non-whitespace-line-end) ";"))
 
 ;;   previous nonempty line is a section name
 (defun sablecc--indent-case-prev-line-section ()
-  "indent-case : previous non-empty line is a section name"
+  "Indent-case : previous non-empty line is a section name?"
   (progn
     (save-excursion
       (sablecc--point-to-prev-non-whitespace-line-end)
@@ -230,7 +227,7 @@
     ;; if the last line of code(!) ended in a semicolon or was a section
     ;; name, current line goes to column 2.
     (if (or (sablecc--indent-case-prev-line-semicolon) (sablecc--indent-case-prev-line-section))
-	(indent-line-to 2)
+	(indent-line-to sablecc-indent-amount)
       ;; if we have an unbalanced paren above this line, we indent to its level + 1
       (let ((paren-indent (sablecc--prev-line-unmatched-paren-column)))
 	(if paren-indent
@@ -240,12 +237,12 @@
 	  (let ((comma-column (sablecc--prev-line-comma-column)))
 	    (if comma-column
 		(indent-line-to comma-column)
-	      ;; if previous line ia a name, indent to same level
+	      ;; if previous line is a name, indent to same level
 	      (let ((name-column (sablecc--prev-line-name-column)))
 		(if name-column
 		    (indent-line-to name-column)
-		  ;; for any other case, indent line to column (+ 2 sablecc-indent-amount)
-		  (indent-line-to (+ 2 sablecc-indent-amount)))))))))))
+		  ;; for any other case, indent line to column (+ paren-indent sablecc-indent-amount)
+		  (indent-line-to (+ paren-indent sablecc-indent-amount)))))))))))
 
 ;; sablecc-mode commands
 ;; -----------------------------------------------------------------------------
@@ -254,7 +251,7 @@
 ;;   command prefix - user settable
 (defcustom sablecc-compile-commmand-prefix
   "sablecc"
-  "The command prefix to use when running sablecc. If you want the jar, java -jar /path/to/sablecc.jar")
+  "The command prefix to use when running sablecc.  If you want the jar, java -jar /path/to/sablecc.jar.")
 ;;   default args - user settable
 (defcustom sablecc-command-line-args-default
   " "
@@ -267,7 +264,9 @@
 ;; functions
 ;;   (internal) compile a file with sablecc
 (defun sablecc--compile (file-path args-string)
-  "Compile  file with sablecc. Not interactive."
+  "Compile  file with sablecc.  Not interactive.
+Argument FILE-PATH path to sablecc executable.
+Argument ARGS-STRING string of arguments to pass to sablecc executable."
   ;; check if --pretty-print is in args-string, if yes provide appropriate buffer
   (let ((pretty-printing (string-match "^.*--pretty-print.*$" args-string)))
     (if pretty-printing
@@ -302,7 +301,7 @@
 
 ;;   get command line arguments from the user
 (defun sablecc--get-command-line-args ()
-  "Get command line arguments from the user when sablecc is run. Remember them for the next run."
+  "Get command line arguments from the user when sablecc is run.  Remember them for the next run."
   (read-string "SableCC arguments : "))
 
 ;;   compile a user-specified file
@@ -319,7 +318,7 @@
   (interactive)
   (let ((file-path (expand-file-name (buffer-file-name))))
     (if (buffer-modified-p)
-	(if ((y-or-n-p (format "Save file %s?" file-path)))
+	(if ((y-or-n-p (format "Save file %s? " file-path)))
 	    (save-buffer)))
     (sablecc--compile file-path (sablecc--get-command-line-args))))
 
@@ -331,7 +330,7 @@
     (define-key map "\C-c \C-c" 'sablecc-compile-buffer)
     (define-key map "\C-c \C-f" 'sablecc-compile-file)
     map)
-  "Keymap for SableCC major mode")
+  "Keymap for SableCC major mode.")
 
 
 ;; sablecc-mode final definition
@@ -352,3 +351,7 @@
 ;; (at least it will load for whatever version the user is using)
 (add-to-list 'auto-mode-alist '("\\.sablecc[[:digit:]]*\\'" . sablecc-mode))
 (provide 'sablecc-mode)
+
+(provide 'sablecc-mode)
+
+;;; sablecc-mode.el ends here
